@@ -6,252 +6,109 @@
 
 <h1><center>莫队</center></h1>
 
-默认的莫队时间复杂度分析仅考虑指针移动的次数，具体问题中，还需要考虑指针移动时维护信息的时间复杂度，和处理询问答案时的时间复杂度，因此具体实现时，可以根据这个均衡块长。
-
 ## 普通莫队
 
-​普通莫队是一个基于分块的离线解决静态区间询问问题的算法。
+### 例 1. [小 Z 的袜子](https://www.luogu.com.cn/problem/P1494)
 
-​设询问区间为 $[l_i,r_i]$。对原序列索引分块。将询问区间离线后以 $l_i$ 所在块的编号为第一关键字，$r_i$ 为第二关键字升序。
+题意简述：
 
-### 算法流程：
+$m$ 次询问求 $a_x=a_y,l_i\le x<y\le r_i$ 的 $(x,y)$ 数量。
 
-​对于每个询问 $[l_i,r_i]$ 的答案，由 $[l_1,r_1]$ 扩展而来，每次用 while 循环暴力移动 $l,r$ 指针。
+解法：
 
-​此时，升序后的 $[l_i,r_i]$，同一块内的 $l_i$ 对应的询问 $[l_i,r_i]$ 视作一个整体，共有 $\frac nt$ 个块。在一个块内的 $r$ 最多移动 $n$ 次（因为同一块内的 $r$ 升序，最多从 $1$ 移动到 $n$。在同一个块内 $l$ 每次扩展最多移动 $t$ 次。同时，从一个块的右端点询问的 $l$ 向下一个块的左端点的 $l$ 扩展时，$l$ 最多移动 $2t$，$r$ 最多移动 $n$。
+等价于询问 $\sum\limits_{x=1}^n\frac{cnt[i]\times(cnt[i] + 1)}{2}$，指针移动时，变化量为 $cnt[a_x]$，容易维护。
 
-### 时间复杂度分析：
+时间复杂度：$O(n\sqrt m)$。
 
-​综上：处理完 $m$ 个询问，$l,r$ 指针的总移动次数为：$O(\frac{n^2}{t}+mt)$。
+卡常技巧 1：
 
-​当 $t=\frac{n}{\sqrt m}$ 时，时间复杂度最优为：$O(n\sqrt m)$。
+维护变化量，不要维护那个乘法原式，加法的运算量低于乘法。
 
-​认为 $n,m$ 同阶，所以直接取 $\sqrt n$。
+### 例 2. [HH 的项链](https://www.luogu.com.cn/problem/P1972)
 
-​上述只是考虑了指针移动次数。每次指针移动都要一次更新操作的时间复杂度。但是具体时间复杂度仍与修改的时间复杂度相关，上述时间复杂度为假设修改的时间复杂度为 $O(1)$ 时的最优。
+题意简述：
 
-### 优化：
+$m$ 次询问求 $[l_i,r_i]$ 中的数字种类数。
 
-​奇偶化排序：对奇数块内的询问的 $r$ 进行升序，对偶数块内的询问的 $r$ 进行降序。
+解法：
 
-​这是很自然的，因为按原本的排序方式，每次进入一个新块时，$r$ 都会从最大值降到最小值，再又升到最大值。这当然是不优的。
+指针移动时，维护数值出现次数的数组，记录非零的数量。
 
-```c++
-struct node {
-    int l, r, id;
-    bool operator<(const node &t) const {
-        return (kind[l] ^ kind[t.l]) ? kind[l] < kind[t.l]
-                                     : ((kind[l] & 1) ? r < t.r : r > t.r);
-    }
-};
-void add(int x) {
-    /*
-    	将 a[x] 加入答案
-    */
-}
-void del(int x) {
-    /*
-    	将 a[x] 删去
-    */
-}
-void solve() {
-    for (int i = 1; i <= n; i++)
-        kind[i] = (i - 1) / B;
-    sort(q + 1, q + 1 + m);
-    int l = 1, r = 0;
-    for (int i = 1; i <= m; i++) {
-        while (q[i].l < l) add(--l);
-        while (q[i].r > r) add(++r);
-        while (q[i].l > l) del(l++);
-        while (q[i].r < r) del(r--);
-        /*
-        	ans[q[i].id] = ...
-        */
-    }
-}
-```
+时间复杂度：$O(n\sqrt m)$。
 
-## 带修莫队
+卡常技巧 1：
 
-### 算法流程：
+值域不够连续，离散化的时候，不按照值的大小离散化，按照值在序列中出现的次序离散化，这样一般意义下的序列中连续的位置，值会相对连续。
 
-​带修莫队与普通莫队相比，多了一维时间轴表示每修改一次，时间增加 $1$。
+避免了桶维护出现次数时的过多的不连续下标访问。
 
-​在修改时。
+卡常技巧 2：
 
-### 时间复杂度分析：
+更强的，向左扩展时，维护 $suf[i]$ 表示下一个 $a_i$ 是不是落在 $[l,r]$ 中，向右扩展时，维护 $pre[i]$ 表示上一个 $a_i$ 是不是落在 $[l,r]$ 中。
 
-​认为序列大小 $n$，询问次数 $m$，修改次数 $t$ 同阶，块长取 $n^{\frac{3}{2}}$ 时，时间复杂度最优，为 $O(n^{\frac{5}{3}})$。
+这样访问的下标是绝对连续的，相比「卡常技巧 1」更加连续，常数更小。
 
-​但是具体时间复杂度仍与修改和查询答案的时间复杂度相关，上述时间复杂度为假设修改和查询答案的时间复杂度均为 $O(1)$ 时的最优。
-
-```c++
-struct node {
-    int l, r, id, t;
-    bool operator<(const node &x) const {
-        if (kind[l] != kind[x.l])
-            return kind[l] < kind[x.l];
-        if (kind[r] != kind[x.r])
-            return kind[r] < kind[x.r];
-        return t < x.t;
-    }
-};
-void add(int x) {
-    /*
-    	将 x 加入答案
-    */
-}
-void del(int x) {
-    /*
-    	将 x 删去
-    */
-}
-void solve() {
-    for (int i = 1; i <= n; i++)
-        kind[i] = (i - 1) / B;
-
-    for (int i = 1; i <= m; i++) {
-        {
-            idx1++;
-            q[idx1] = {l, r, idx1, idx2};
-        }
-        {
-            c[++idx2] = {x, v};
-        }
-    }
-
-    sort(q + 1, q + 1 + idx1);
-
-    int l = 1, r = 0, t = 0;
-    for (int i = 1; i <= idx1; i++) {
-        while (q[i].l < l)
-            add(a[--l]);
-        while (q[i].l > l)
-            del(a[l++]);
-        while (q[i].r < r)
-            del(a[r--]);
-        while (q[i].r > r)
-            add(a[++r]);
-        while (t < q[i].t) {
-            t++;
-            int now = c[t].first;
-            int cur = c[t].second;
-            if (now >= l && now <= r) {
-                del(a[now]);
-                add(cur);
-            }
-            swap(a[now], c[t].second);
-        }
-        while (t > q[i].t) {
-            int now = c[t].first;
-            int cur = c[t].second;
-            if (now >= l && now <= r) {
-                del(a[now]);
-                add(cur);
-            }
-            swap(a[now], c[t].second);
-            t--;
-        }
-        /*
-            ans[q[i].id] = ...;
-        */
-    }
-}
-```
 
 ## 回滚莫队
 
-​回滚莫队用于 add 容易维护，del 不易维护的问题，可以将 del 操作转换成 add 操作。
+### 例 1. [回滚莫队](https://www.luogu.com.cn/problem/P5906)
 
-### 算法流程：
+题意简述：
 
-​在普通莫队中，处理 $l_i$ 位于同一块内的询问时：
+$m$ 次询问求 $[l_i,r_i]$ 中距离最远的两个相同数字的距离。
 
-- 若 $r_i$ 也在 $l_i$ 的块内，询问区间长度 $\le t$，直接暴力处理。
-- 若 $r_i$ 不在 $l_i$ 的块内，按 $r_i$ 升序 add，对于相同的 $r_i$ 的不同 $l_i$，因为 $l_i$ 在同一块内，所以直接重新从 $l_i$ 所在块的右边界 add 过去。
+解法：
 
-​这样实现时，不同块的 $l_i$ 的询问之间就独立了，进入下一个块时，要清空维护的信息。
+容易维护 add，不容易维护 del。
 
-### 时间复杂度分析：
+维护 $\min[a_x]$ 和 $\max[a_x]$，做差更新答案。
 
-处理过程中，右端点移动 $O(n)$，有 $O(\dfrac{n}{B})$，总 $O(\dfrac{n^2}{B})$，左端点均摊每个询问移动 $O(B)$，总 $O(mB)$。
+时间复杂度：$O(n\sqrt m)$。
 
-```c++
-struct node {
-    int l, r, id;
-    bool operator<(const node &t) const {
-        if (kind[l] != kind[t.l])
-            return kind[l] < kind[t.l];
-        return r < t.r;
-    }
-} q[N];
-void add(int x) {
-    /*
-        将 a[x] 加入答案
-    */
-}
-void init(){
+可以使用「HH 的项链」中提到的卡常技巧，但是数据范围小，效果不明显。
 
-}
+### 例 2. [历史的研究](https://www.luogu.com.cn/problem/P14420)
 
-void solve() {
+题意简述：
 
-    for (int i = 1; i <= n; i++)
-        kind[i] = (i - 1) / B + 1;
+$m$ 次询问求 $[l_i,r_i]$ 中 $a[x]\times cnt[a[x]]$ 的最大值。
 
-    sort(q + 1, q + 1 + m);
+解法：
 
-    int i = 1, l, r, res = 0;
-    while (i <= m) {
-        int j = i;
-        while (j <= m && kind[q[i].l] == kind[q[j].l])
-            j++;
-        int right = min(n, kind[q[i].l] * B);
-        while (i < j && q[i].r <= right) {
-            res = 0;
-            for (int k = q[i].l; k <= q[i].r; k++)
-                add(k);
-            /*
-			    ans[q[i].id] = ...;
-			*/
-            init(); // 清空信息
-            i++;
-        }
-        l = right + 1, r = right;
-        while (i < j) {
-            while (r < q[i].r)
-                add(++r);
-            /*
-                拷贝旧信息
-            */
-            while (l > q[i].l)
-                add(--l);
-            /*
-			    ans[q[i].id] = ...;
-			*/
-            while(l < right + 1){
-                l++;// 回滚
-            }
-            /*
-                回滚到旧信息
-            */
-            i++;
-        }
-        init(); // 清空信息
-    }
-}
-```
+容易维护 add，不容易维护 del，维护 $cnt[a[x]]$ 即可。
+
+时间复杂度：$O(n\sqrt m)$。
+
+可以使用「HH 的项链」中提到的卡常技巧，但是数据范围小，效果不明显。
+
+## 带修莫队
+
+### 例 1. [数颜色](https://www.luogu.com.cn/problem/P1903)
+
+题意简述：
+
+$m$ 次询问求 $[l_i,r_i]$ 中的数字种类数，需要支持单点修改。
+
+解法：
+
+维护方式同「HH 的项链」。
+
+时间复杂度：$O(n^{\frac{5}{3}})$。
+
+可以使用「HH 的项链」中提到的卡常技巧，指针移动次数规模大，效果显著。
 
 ## 树上莫队
 
-​树上莫队就是莫队上树，询问树上路径信息，因为莫队通过 add 和 del 维护信息，所以在括号序上跑莫队即可。括号序会通过一次 add 和一次 del 将树上两点的 LCA 的祖先信息去掉。
+### 例 1. [Count on a tree II](https://www.luogu.com.cn/problem/SP10707)
 
-### 算法流程：
+题意简述：
 
-与其它莫队一致。
+$m$ 次询问求树上路径 $(x,y)$ 上不同点权的数量。
 
-### 时间复杂度分析：
+解法：
 
-与其它莫队一致。
+维护方式同「HH 的项链」。
+
+时间复杂度：$O(n\sqrt m)$。
 
 ## 二次离线莫队

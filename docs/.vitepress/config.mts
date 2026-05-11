@@ -6,7 +6,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   lastUpdated: true,
   
-  // base: "/blog-algorithm/",
+  base: "/blog-algorithm-exercises/",
   
   head: [
     ['link', { rel: 'icon', href: '/logo2.ico' }]
